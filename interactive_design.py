@@ -34,8 +34,9 @@ import sys
 import os
 sys.stdout.reconfigure(encoding="utf-8")
 
+import json
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox
+from tkinter import ttk, scrolledtext, messagebox, filedialog
 import numpy as np
 import matplotlib
 try:
@@ -531,9 +532,15 @@ class OutputWindow(tk.Toplevel):
         self.geometry("880x800")
         self.minsize(600, 400)
 
-        tk.Label(self, text="  ANALYSIS OUTPUT",
+        # Top bar: title + save button
+        top_bar = tk.Frame(self, bg="#0d1117")
+        top_bar.pack(fill="x")
+        tk.Label(top_bar, text="  ANALYSIS OUTPUT",
                  bg="#0d1117", fg="#58a6ff",
-                 font=("Consolas", 13, "bold"), pady=8).pack(fill="x")
+                 font=("Consolas", 13, "bold"), pady=8).pack(side="left")
+        ttk.Button(top_bar, text=" Save to file ",
+                   style="Save.TButton",
+                   command=self._save).pack(side="right", padx=10, pady=4)
 
         # Wrapper frame so both scrollbars are managed together
         frame = tk.Frame(self, bg="#0d1117")
@@ -568,6 +575,24 @@ class OutputWindow(tk.Toplevel):
         self.text.see("1.0")
         self.lift()
         self.focus_force()
+
+    def _save(self):
+        path = filedialog.asksaveasfilename(
+            parent=self,
+            title="Save Analysis Output",
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            initialfile="evtol_output.txt")
+        if not path:
+            return
+        try:
+            self.text.configure(state="normal")
+            content = self.text.get("1.0", tk.END)
+            self.text.configure(state="disabled")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+        except Exception as e:
+            messagebox.showerror("Save Error", str(e), parent=self)
 
 
 # ---------------------------------------------------------------------------
@@ -608,10 +633,13 @@ class App(tk.Tk):
                     font=("Consolas", 11, "bold"), padding=8)
         s.configure("Tip.TButton",  background="#ffa657", foreground="#0d1117",
                     font=("Consolas", 10, "bold"), padding=6)
+        s.configure("Save.TButton", background="#8b949e", foreground="#0d1117",
+                    font=("Consolas", 10, "bold"), padding=6)
         s.map("Run.TButton",  background=[("active", "#79c0ff")])
         s.map("Plot.TButton", background=[("active", "#56d364")])
         s.map("Out.TButton",  background=[("active", "#e8c8ff")])
         s.map("Tip.TButton",  background=[("active", "#ffcf86")])
+        s.map("Save.TButton", background=[("active", "#c9d1d9")])
 
     # ── Top-level layout ───────────────────────────────────────────────
     def _ui(self):
@@ -641,6 +669,15 @@ class App(tk.Tk):
                    command=self._show_out).pack(side="left", padx=10)
         ttk.Button(bf, text="  SHOW PLOTS  ", style="Plot.TButton",
                    command=self._plots).pack(side="left", padx=10)
+        # Separator
+        ttk.Separator(bf, orient="vertical").pack(
+            side="left", fill="y", padx=8, pady=2)
+        ttk.Button(bf, text=" SAVE INPUTS ", style="Save.TButton",
+                   command=self._save_inputs).pack(side="left", padx=4)
+        ttk.Button(bf, text=" LOAD INPUTS ", style="Save.TButton",
+                   command=self._load_inputs).pack(side="left", padx=4)
+        ttk.Button(bf, text=" SAVE OUTPUT ", style="Save.TButton",
+                   command=self._save_output).pack(side="left", padx=4)
 
         # Status bar
         self.status = tk.StringVar(value="  Ready -- press RUN ANALYSIS")
@@ -891,6 +928,86 @@ class App(tk.Tk):
         generate_all_plots(
             result=ref, design=r["design"], cg_seq=r["cg_seq"],
             altitudes_ft=r["altitudes"], roc=r["roc"], v_max=r["v_max"])
+
+    # ── Save / Load inputs ──────────────────────────────────────────
+    def _var_map(self) -> dict:
+        """Return {input_key: StringVar} for every editable field."""
+        return {
+            "gw_guess":    self.v_gw,        "rotor_radius": self.v_radius,
+            "n_blades":    self.v_blades,     "n_wheels":     self.v_wheels,
+            "chord":       self.v_chord,
+            "ck_l": self.v_ck_l, "ck_w": self.v_ck_w, "ck_h": self.v_ck_h,
+            "ca_l": self.v_ca_l, "ca_w": self.v_ca_w, "ca_h": self.v_ca_h,
+            "n_people":    self.v_npeop,
+            "k_elec":      self.v_k_elec,    "k_batt":       self.v_k_batt,
+            "battery_se":  self.v_se,        "cruise_speed":  self.v_vfwd,
+            "aoa_deg":     self.v_aoa,       "climb_rate":    self.v_climb,
+            "descent_rate":self.v_descent,   "rotor_rpm":     self.v_rpm,
+            "range_nmi":   self.v_range,     "cruise_alt_ft": self.v_cruise_alt,
+            "hover_time_min": self.v_hover_time,
+            "payload_crew":self.v_pay_crew,  "payload_elec":  self.v_pay_elec,
+            "payload_def": self.v_pay_def,
+            "roc_vmin":    self.v_roc_vmin,  "roc_vmax":      self.v_roc_vmax,
+            "vmax_vmin":   self.v_vmax_vmin, "vmax_vmax":     self.v_vmax_vmax,
+            "alt_max":     self.v_alt_max,   "alt_pts":       self.v_alt_pts,
+            "tip_noise":   self.v_tip_noise, "tip_ske":       self.v_tip_ske,
+            "tip_M_comp":  self.v_tip_M,     "tip_mu_max":    self.v_tip_mu,
+        }
+
+    def _save_inputs(self):
+        path = filedialog.asksaveasfilename(
+            title="Save Input Configuration",
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            initialfile="evtol_inputs.json")
+        if not path:
+            return
+        try:
+            data = self._inputs()
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            self.status.set(f"  Inputs saved to {os.path.basename(path)}")
+        except Exception as e:
+            messagebox.showerror("Save Error", str(e))
+
+    def _load_inputs(self):
+        path = filedialog.askopenfilename(
+            title="Load Input Configuration",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
+        if not path:
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            vm = self._var_map()
+            loaded = 0
+            for key, var in vm.items():
+                if key in data:
+                    var.set(str(data[key]))
+                    loaded += 1
+            self.status.set(
+                f"  Loaded {loaded} inputs from {os.path.basename(path)}")
+        except Exception as e:
+            messagebox.showerror("Load Error", str(e))
+
+    def _save_output(self):
+        if not self._last:
+            messagebox.showinfo("No Data", "Run analysis first.")
+            return
+        path = filedialog.asksaveasfilename(
+            title="Save Analysis Output",
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            initialfile="evtol_output.txt")
+        if not path:
+            return
+        try:
+            txt = format_output(self._last)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(txt)
+            self.status.set(f"  Output saved to {os.path.basename(path)}")
+        except Exception as e:
+            messagebox.showerror("Save Error", str(e))
 
     # ── Tip speed chart ───────────────────────────────────────────────
     def _show_tip_chart(self):
