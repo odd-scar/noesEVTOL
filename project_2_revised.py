@@ -918,7 +918,9 @@ def weight_closure(design: RotorcraftDesign,
 def max_rate_of_climb_vs_altitude(design:         RotorcraftDesign,
                                    mtow:           Q_,
                                    p_installed_hp: float,
-                                   altitudes_ft:   np.ndarray) -> tuple:
+                                   altitudes_ft:   np.ndarray,
+                                   v_min_kts:      float = 20,
+                                   v_max_kts:      float = 170) -> tuple:
     """
     Max rate of climb (ft/min) at each altitude via excess-power method.
 
@@ -929,7 +931,7 @@ def max_rate_of_climb_vs_altitude(design:         RotorcraftDesign,
     Sweeps forward speed 20–170 kts; best ROC = max excess power / W.
     Returns (roc_ft_per_min, v_best_kts) arrays.
     """
-    V_sweep = np.linspace(20, 170, 50)
+    V_sweep = np.linspace(v_min_kts, v_max_kts, 50)
     W       = mtow.to(lbf).magnitude
     roc_max = np.zeros(len(altitudes_ft))
     v_best  = np.zeros(len(altitudes_ft))
@@ -974,7 +976,9 @@ def max_speed_vs_altitude(design:         RotorcraftDesign,
                            mtow:           Q_,
                            p_installed_hp: float,
                            altitudes_ft:   np.ndarray,
-                           M_adv_limit:    float = 0.78) -> np.ndarray:
+                           M_adv_limit:    float = 0.78,
+                           v_min_kts:      float = 60,
+                           v_max_kts:      float = 215) -> np.ndarray:
     """
     Maximum level-flight speed (kts) at each altitude.
 
@@ -1038,7 +1042,7 @@ def max_speed_vs_altitude(design:         RotorcraftDesign,
             except Exception:
                 return -1.0
 
-        V_sweep  = np.linspace(60, 215, 300)
+        V_sweep  = np.linspace(v_min_kts, v_max_kts, 300)
         feasible = [V for V in V_sweep if power_excess(V) >= 0]
         if feasible:
             v_max_arr[j] = max(feasible)
