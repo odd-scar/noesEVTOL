@@ -926,10 +926,18 @@ def max_rate_of_climb_vs_altitude(design:         RotorcraftDesign,
 
     ROC = (P_avail − P_req) × 550 / W × 60    [ft/min]
 
-    All atmosphere data from standard_atmosphere.csv.
-    P_avail lapsed with σ^0.12 (electric motor cooling derating).
-    Sweeps forward speed 20–170 kts; best ROC = max excess power / W.
-    Returns (roc_ft_per_min, v_best_kts) arrays.
+    All atmosphere data from standard_atmosphere.csv via csv_density().
+
+    Electric motors deliver constant shaft power at all altitudes —
+    they do not ingest air like turboshafts, so there is no power-
+    available lapse with altitude.  P_avail = P_installed at every
+    altitude point.  ROC decreases with altitude solely because air
+    density drops: lower ρ raises induced power (C_T = T/(ρ·A·(ΩR)²)
+    grows, driving C_P_induced up), so the excess P_avail − P_req
+    shrinks.
+
+    Sweeps forward speed v_min_kts–v_max_kts; best ROC = max excess
+    power / W.  Returns (roc_ft_per_min, v_best_kts) arrays.
     """
     V_sweep = np.linspace(v_min_kts, v_max_kts, 50)
     W       = mtow.to(lbf).magnitude
@@ -937,9 +945,8 @@ def max_rate_of_climb_vs_altitude(design:         RotorcraftDesign,
     v_best  = np.zeros(len(altitudes_ft))
 
     for j, h in enumerate(altitudes_ft):
-        rho        = csv_density(h) * slug / ft**3   # from CSV
-        sigma      = csv_sigma(h)                     # from CSV
-        p_avail_hp = p_installed_hp * sigma**0.12     # motor derating
+        rho        = csv_density(h) * slug / ft**3   # density from CSV
+        p_avail_hp = p_installed_hp                   # constant — electric motor
         best_rc    = 0.0
         best_v     = 0.0
 
@@ -983,38 +990,34 @@ def max_speed_vs_altitude(design:         RotorcraftDesign,
     Maximum level-flight speed (kts) at each altitude.
 
     ALL atmosphere data sourced from standard_atmosphere.csv:
-      • density  → csv_density()          [kg/m³ → slug/ft³]
-      • speed of sound → csv_speed_of_sound()  [m/s → ft/s]
-      • density ratio σ → csv_sigma()     (for power lapse)
+      • density        → csv_density()         [kg/m³ → slug/ft³]
+      • speed of sound → csv_speed_of_sound()  [m/s   → ft/s   ]
 
-    Three constraints combine to make V_max decrease with altitude:
+    Electric motors deliver constant shaft power at all altitudes —
+    they do not ingest air, so P_avail = P_installed everywhere.
+    The σ^0.12 derating used for turboshafts does NOT apply here and
+    has been removed.
 
-    1. Advancing-tip Mach limit (Fig 10.4 / Lecture 12 slide 15)
-       M_adv = (V_tip + V_fwd) / a(h)
-       a(h) drops with altitude → Mach constraint tightens.
+    Two physics mechanisms drive V_max down with altitude:
 
-    2. Power available lapse:
-       Electric motors are air-cooled; cooling mass-flow ∝ ρ.
-       P_avail(h) = P_installed × σ^0.12  (empirical eVTOL derating)
-       This is much less than a turboshaft (σ^1.0) but still reduces
-       available power.
+    1. Advancing-tip Mach constraint  (primary, Fig 10.4):
+         M_adv = (V_tip + V_fwd) / a(h)   ≤  M_adv_limit (0.78)
+       a(h) decreases with altitude, so the same V_tip + V_fwd
+       produces a higher Mach number.  The aircraft must slow down
+       to keep the advancing blade below M_adv_limit.
 
-    3. Power required change:
-       At altitude ρ drops, so induced power (∝ T²/ρ at fixed μ)
-       increases even though parasitic power decreases.
-
-    Combined effect: V_max decreases monotonically with altitude,
-    consistent with Lecture 12 slide 25.
+    2. Power-required increase  (secondary):
+       Lower density raises the thrust coefficient
+         C_T = T / (ρ · A · (Ω R)²)
+       and therefore induced power.  P_req grows, shrinking the
+       margin P_avail − P_req and reducing the feasible speed range.
     """
     v_max_arr = np.zeros(len(altitudes_ft))
 
     for j, h in enumerate(altitudes_ft):
-        rho   = csv_density(h) * slug / ft**3           # from CSV
-        a_fps = csv_speed_of_sound(h)                    # from CSV (m/s → ft/s)
-        sigma = csv_sigma(h)                              # from CSV
-
-        # Power available lapse: motor cooling degrades with thinner air
-        p_avail_hp = p_installed_hp * sigma**0.12
+        rho        = csv_density(h) * slug / ft**3   # density from CSV
+        a_fps      = csv_speed_of_sound(h)            # speed of sound from CSV
+        p_avail_hp = p_installed_hp                   # constant — electric motor
 
         def power_excess(V_kts: float) -> float:
             V_fps_val = (V_kts * kts).to(ft / s)
