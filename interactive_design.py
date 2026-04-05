@@ -228,9 +228,10 @@ def format_output(r: dict) -> str:
     se_min_wh_kg = (e_nom_kWh * 1000.0) / m_batt_budget_kg if m_batt_budget_kg > 0 else float("inf")
     ratio = se_min_wh_kg / se_wh_kg if se_wh_kg > 0 else float("inf")
 
-    if   abs(dw) < 200: fs, fy = "CLOSES  (DW ~ 0)",               "[OK]"
-    elif dw > 0:        fs, fy = "GW GUESS TOO HIGH -- may reduce", "[^]"
-    else:               fs, fy = "DOES NOT CLOSE -- GW too low",    "[X]"
+    if   0 <= dw < 200:  fs, fy = "CLOSES  (DW \u2248 0)",                    "[OK]"
+    elif dw >= 200:      fs, fy = "GW GUESS TOO HIGH -- may reduce",        "[^]"
+    elif dw >= -200:     fs, fy = "BARELY MISSES -- increase GW slightly",  "[~]"
+    else:                fs, fy = "DOES NOT CLOSE -- GW too low",           "[X]"
 
     S  = "=" * 66
     s2 = "-" * 66
@@ -302,13 +303,21 @@ def format_output(r: dict) -> str:
     a(f"     = {dw:+,.0f} lb")
     a("")
     a(f"  {fy}  {fs}")
-    if dw < -200:
+    if 0 <= dw < 200:
         a("")
-        a(f"  Computed MTOW ({mtow_lb:,.0f} lb) exceeds GW guess ({gw_lb:,.0f} lb).")
-        a("  Increase GW, reduce range, or raise battery SE.")
-    elif dw > 200:
+        a(f"  Computed MTOW ({mtow_lb:,.0f} lb) is within {dw:,.0f} lb of GW guess. Design closes.")
+    elif dw >= 200:
         a("")
-        a(f"  GW_guess is conservative. Computed MTOW = {mtow_lb:,.0f} lb.")
+        a(f"  GW_guess ({gw_lb:,.0f} lb) is conservative by {dw:,.0f} lb.")
+        a(f"  Computed MTOW = {mtow_lb:,.0f} lb. You may lower GW guess.")
+    elif dw >= -200:
+        a("")
+        a(f"  Computed MTOW ({mtow_lb:,.0f} lb) exceeds GW guess by {abs(dw):,.0f} lb.")
+        a(f"  Increase GW guess by at least {abs(dw):,.0f} lb and re-run.")
+    else:
+        a("")
+        a(f"  Computed MTOW ({mtow_lb:,.0f} lb) exceeds GW guess ({gw_lb:,.0f} lb) by {abs(dw):,.0f} lb.")
+        a("  Increase GW, reduce range/payload, or raise battery specific energy.")
 
     # 6. Minimum SE
     a(f"\n{S}")
