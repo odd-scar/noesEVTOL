@@ -46,13 +46,13 @@ from project_2_revised import (
     fuselage_volume_check,
 )
 
-# Fixed mission parameters
-CRUISE_RANGE_NMI   = 250
-CRUISE_ALT_FT      = 3_000
-HOVER_TIME_MIN     = 2.0
-PAYLOAD_CREW_LBF   = 2_000
-PAYLOAD_ELEC_LBF   = 1_000
-PAYLOAD_DEF_LBF    = 1_000
+# Default mission parameters (now editable via UI)
+_DEFAULT_RANGE_NMI    = 250
+_DEFAULT_ALT_FT       = 3_000
+_DEFAULT_HOVER_MIN    = 2.0
+_DEFAULT_CREW_LBF     = 2_000
+_DEFAULT_ELEC_LBF     = 1_000
+_DEFAULT_DEF_LBF      = 1_000
 
 
 def _fval(v, d):
@@ -75,9 +75,9 @@ def run_analysis(inp):
             cabin_width=inp["ca_w"]*ft, cabin_height=inp["ca_h"]*ft,
             landing_gear_height=3.0*ft),
         payload=PayloadWeights(
-            crew_and_passengers=PAYLOAD_CREW_LBF*lbf,
-            electronics=PAYLOAD_ELEC_LBF*lbf,
-            defense_system=PAYLOAD_DEF_LBF*lbf),
+            crew_and_passengers=inp["payload_crew"]*lbf,
+            electronics=inp["payload_elec"]*lbf,
+            defense_system=inp["payload_def"]*lbf),
         aero=AeroCoefficients(cd0_hover=0.001, induced_power_factor=1.15,
                               profile_power_factor=4.7, power_margin=1.25),
         battery=BatteryModel(
@@ -87,12 +87,12 @@ def run_analysis(inp):
         hover_rotor_speed_rpm=inp["rotor_rpm"],
     )
     mission = MissionProfile(
-        cruise_range=CRUISE_RANGE_NMI*nmi, cruise_altitude=CRUISE_ALT_FT*ft,
+        cruise_range=inp["range_nmi"]*nmi, cruise_altitude=inp["cruise_alt_ft"]*ft,
         climb_rate=inp["climb_rate"]*ft/minute,
         cruise_speed=inp["cruise_speed"]*kts,
         descent_rate=inp["descent_rate"]*ft/minute,
-        hover_time_takeoff=HOVER_TIME_MIN*minute,
-        hover_time_landing=HOVER_TIME_MIN*minute)
+        hover_time_takeoff=inp["hover_time_min"]*minute,
+        hover_time_landing=inp["hover_time_min"]*minute)
 
     gw  = design.gw_guess.to(lbf)
     ref = single_point_analysis(design, mission, gw, alpha_deg=inp["aoa_deg"])
@@ -167,10 +167,13 @@ def format_output(r):
     a(f"  {'Item':<42} {'Weight (lb)':>10}"); a(s2)
     a(f"  {'Assumed Gross Weight (GW_guess) [INPUT]':<42} {gw_lb:>10,.0f}"); a(s2)
     a(f"  {'Empty Weight            (computed)':<42} {w_empty_lb:>10,.0f}")
-    a(f"  {'Payload Weight          (fixed)':<42} {w_pay_lb:>10,.0f}")
-    a(f"    {'  Crew & Passengers':<40} {PAYLOAD_CREW_LBF:>10,.0f}")
-    a(f"    {'  Electronics Bay':<40} {PAYLOAD_ELEC_LBF:>10,.0f}")
-    a(f"    {'  Defensive Armament':<40} {PAYLOAD_DEF_LBF:>10,.0f}")
+    w_crew_lb = design.payload.crew_and_passengers.to(lbf).magnitude
+    w_elec_lb = design.payload.electronics.to(lbf).magnitude
+    w_def_lb  = design.payload.defense_system.to(lbf).magnitude
+    a(f"  {'Payload Weight          (user input)':<42} {w_pay_lb:>10,.0f}")
+    a(f"    {'  Crew & Passengers':<40} {w_crew_lb:>10,.0f}")
+    a(f"    {'  Electronics Bay':<40} {w_elec_lb:>10,.0f}")
+    a(f"    {'  Defensive Armament':<40} {w_def_lb:>10,.0f}")
     a(f"  {'Battery Weight          (computed)':<42} {w_batt_lb:>10,.0f}"); a(s2)
     a(f"  {'Computed MTOW = W_empty+W_pay+W_batt':<42} {mtow_lb:>10,.0f}")
 
@@ -338,14 +341,16 @@ class App(tk.Tk):
         self.v_climb   = self._le(f,r,0,"Climb Rate [ft/min]",500,7);r+=1
         self.v_descent = self._le(f,r,0,"Descent Rate [ft/min]",500,7);r+=1
         self.v_rpm     = self._le(f,r,0,"Hover Rotor Speed [RPM]",300,7);r+=1
-        ttk.Label(f, text="--- Fixed Mission ---").grid(row=r, column=0, columnspan=2, pady=(12,2));r+=1
-        for t in [f"Range        : {CRUISE_RANGE_NMI} nmi",
-                  f"Cruise alt   : {CRUISE_ALT_FT:,} ft",
-                  f"Hover time   : {HOVER_TIME_MIN:.0f} min each end",
-                  f"Payload      : {PAYLOAD_CREW_LBF:,} lb crew/pax",
-                  f"             + {PAYLOAD_ELEC_LBF:,} lb electronics",
-                  f"             + {PAYLOAD_DEF_LBF:,} lb defense"]:
-            ttk.Label(f, text=t, foreground="#8b949e").grid(row=r, column=0, columnspan=2, sticky="w", pady=1);r+=1
+        ttk.Label(f, text="--- Mission Profile ---", foreground="#ffa657").grid(
+            row=r, column=0, columnspan=2, pady=(12,2));r+=1
+        self.v_range      = self._le(f,r,0,"Range [nmi]",_DEFAULT_RANGE_NMI,7);r+=1
+        self.v_cruise_alt = self._le(f,r,0,"Cruise Alt [ft]",_DEFAULT_ALT_FT,7);r+=1
+        self.v_hover_time = self._le(f,r,0,"Hover Time [min/end]",_DEFAULT_HOVER_MIN,7);r+=1
+        ttk.Label(f, text="--- Payload [lb] ---", foreground="#ffa657").grid(
+            row=r, column=0, columnspan=2, pady=(8,2));r+=1
+        self.v_pay_crew = self._le(f,r,0,"Crew & Passengers",_DEFAULT_CREW_LBF,7);r+=1
+        self.v_pay_elec = self._le(f,r,0,"Electronics",_DEFAULT_ELEC_LBF,7);r+=1
+        self.v_pay_def  = self._le(f,r,0,"Defense System",_DEFAULT_DEF_LBF,7);r+=1
 
     def _inputs(self):
         return {"gw_guess":_fval(self.v_gw,25000), "rotor_radius":_fval(self.v_radius,19.5),
@@ -357,7 +362,13 @@ class App(tk.Tk):
                 "aoa_deg":_fval(self.v_aoa,10), "climb_rate":_fval(self.v_climb,500),
                 "descent_rate":_fval(self.v_descent,500), "rotor_rpm":_fval(self.v_rpm,300),
                 "n_people":_ival(self.v_npeop,10),
-                "k_elec":_fval(self.v_k_elec,0.020), "k_batt":_fval(self.v_k_batt,0.025)}
+                "k_elec":_fval(self.v_k_elec,0.020), "k_batt":_fval(self.v_k_batt,0.025),
+                "range_nmi":_fval(self.v_range,_DEFAULT_RANGE_NMI),
+                "cruise_alt_ft":_fval(self.v_cruise_alt,_DEFAULT_ALT_FT),
+                "hover_time_min":_fval(self.v_hover_time,_DEFAULT_HOVER_MIN),
+                "payload_crew":_fval(self.v_pay_crew,_DEFAULT_CREW_LBF),
+                "payload_elec":_fval(self.v_pay_elec,_DEFAULT_ELEC_LBF),
+                "payload_def":_fval(self.v_pay_def,_DEFAULT_DEF_LBF)}
 
     def _run(self):
         self.status.set("  Running analysis ..."); self.update_idletasks()
