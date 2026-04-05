@@ -610,22 +610,22 @@ class App(tk.Tk):
         tk.Label(self,
                  text="  Marine One eVTOL -- Interactive Design Tool",
                  bg=BG, fg="#58a6ff",
-                 font=("Consolas", 14, "bold"), pady=10).pack(fill="x")
+                 font=("Consolas", 14, "bold"), pady=5).pack(fill="x")
 
         # Row 1: Design | Performance
         top = ttk.Frame(self)
-        top.pack(fill="x", padx=12, pady=4)
+        top.pack(fill="x", padx=10, pady=(2, 0))
         self._design_sec(top)
         self._perf_sec(top)
 
         # Row 2: Sweep & Tip Speed (full width)
         mid = ttk.Frame(self)
-        mid.pack(fill="x", padx=12, pady=4)
+        mid.pack(fill="x", padx=10, pady=(2, 0))
         self._sweep_sec(mid)
 
         # Action buttons
         bf = ttk.Frame(self)
-        bf.pack(pady=8)
+        bf.pack(pady=5)
         ttk.Button(bf, text="  RUN ANALYSIS  ", style="Run.TButton",
                    command=self._run).pack(side="left", padx=10)
         ttk.Button(bf, text="  SHOW OUTPUT  ", style="Out.TButton",
@@ -638,21 +638,21 @@ class App(tk.Tk):
         tk.Label(self, textvariable=self.status,
                  bg="#161b22", fg="#8b949e",
                  font=("Consolas", 10), anchor="w",
-                 padx=10, pady=8).pack(fill="x", padx=12, pady=(0, 12))
+                 padx=10, pady=5).pack(fill="x", padx=10, pady=(0, 6))
 
     # ── Shared label+entry helper ──────────────────────────────────────
     def _le(self, parent, row, col, label, default, width=8):
         ttk.Label(parent, text=label).grid(
-            row=row, column=col, sticky="e", padx=4, pady=3)
+            row=row, column=col, sticky="e", padx=(4, 2), pady=2)
         v = tk.StringVar(value=str(default))
         ttk.Entry(parent, textvariable=v, width=width).grid(
-            row=row, column=col + 1, sticky="w", padx=4, pady=3)
+            row=row, column=col + 1, sticky="w", padx=(2, 4), pady=2)
         return v
 
     # ── Design Characteristics panel ─────────────────────────────────
     def _design_sec(self, parent):
-        f = ttk.LabelFrame(parent, text="  DESIGN CHARACTERISTICS  ", padding=10)
-        f.pack(side="left", fill="both", expand=True, padx=6, pady=4)
+        f = ttk.LabelFrame(parent, text="  DESIGN CHARACTERISTICS  ", padding=(8, 4))
+        f.pack(side="left", fill="both", expand=True, padx=4, pady=2)
         r = 0
         self.v_gw     = self._le(f, r, 0, "Gross Weight Guess [lb]", _D_GW,    9); r += 1
         self.v_radius = self._le(f, r, 0, "Rotor Radius [ft]",       _D_RADIUS, 7); r += 1
@@ -660,18 +660,18 @@ class App(tk.Tk):
         self.v_wheels = self._le(f, r, 0, "Number of Wheels",        _D_WHEELS, 5); r += 1
         self.v_chord  = self._le(f, r, 0, "Blade Chord [ft]",        _D_CHORD,  7); r += 1
         ttk.Label(f, text="--- Cockpit Geometry ---").grid(
-            row=r, column=0, columnspan=2, pady=(8, 2)); r += 1
+            row=r, column=0, columnspan=2, pady=(4, 1)); r += 1
         self.v_ck_l = self._le(f, r, 0, "Length [ft]", _D_CK_L, 6); r += 1
         self.v_ck_w = self._le(f, r, 0, "Width  [ft]", _D_CK_W, 6); r += 1
         self.v_ck_h = self._le(f, r, 0, "Height [ft]", _D_CK_H, 6); r += 1
         ttk.Label(f, text="--- Cabin Geometry ---").grid(
-            row=r, column=0, columnspan=2, pady=(8, 2)); r += 1
+            row=r, column=0, columnspan=2, pady=(4, 1)); r += 1
         self.v_ca_l = self._le(f, r, 0, "Length [ft]", _D_CA_L, 6); r += 1
         self.v_ca_w = self._le(f, r, 0, "Width  [ft]", _D_CA_W, 6); r += 1
         self.v_ca_h = self._le(f, r, 0, "Height [ft]", _D_CA_H, 6); r += 1
-        ttk.Label(f, text="--- Volume Sizing Coefficients ---",
+        ttk.Label(f, text="--- Volume Sizing ---",
                   foreground="#ffa657").grid(
-            row=r, column=0, columnspan=2, pady=(8, 2)); r += 1
+            row=r, column=0, columnspan=2, pady=(4, 1)); r += 1
         self.v_npeop  = self._le(f, r, 0, "N_people (crew+pax)",    _D_NPEOP,  5); r += 1
         self.v_k_elec = self._le(f, r, 0, "K_electronics [ft^3/lb]", _D_K_ELEC, 7); r += 1
         self.v_k_batt = self._le(f, r, 0, "K_battery [ft^3/lb]",     _D_K_BATT, 7); r += 1
@@ -680,8 +680,8 @@ class App(tk.Tk):
     def _perf_sec(self, parent):
         f = ttk.LabelFrame(parent,
                            text="  PERFORMANCE CHARACTERISTICS  ",
-                           padding=10)
-        f.pack(side="left", fill="both", expand=True, padx=6, pady=4)
+                           padding=(8, 4))
+        f.pack(side="left", fill="both", expand=True, padx=4, pady=2)
         r = 0
         self.v_se      = self._le(f, r, 0, "Battery Spec Energy [Wh/kg]", _D_SE,      9); r += 1
         self.v_vfwd    = self._le(f, r, 0, "Cruise Speed [kts]",           _D_VFWD,    7); r += 1
@@ -692,106 +692,102 @@ class App(tk.Tk):
 
         ttk.Label(f, text="--- Mission Profile ---",
                   foreground="#ffa657").grid(
-            row=r, column=0, columnspan=2, pady=(12, 2)); r += 1
+            row=r, column=0, columnspan=2, pady=(4, 1)); r += 1
         self.v_range      = self._le(f, r, 0, "Range [nmi]",          _D_RANGE,   7); r += 1
         self.v_cruise_alt = self._le(f, r, 0, "Cruise Alt [ft]",      _D_ALT,     7); r += 1
         self.v_hover_time = self._le(f, r, 0, "Hover Time [min/end]", _D_HOVER_T, 7); r += 1
 
         ttk.Label(f, text="--- Payload [lb] ---",
                   foreground="#ffa657").grid(
-            row=r, column=0, columnspan=2, pady=(8, 2)); r += 1
+            row=r, column=0, columnspan=2, pady=(4, 1)); r += 1
         self.v_pay_crew = self._le(f, r, 0, "Crew & Passengers", _D_CREW, 7); r += 1
         self.v_pay_elec = self._le(f, r, 0, "Electronics",       _D_ELEC, 7); r += 1
         self.v_pay_def  = self._le(f, r, 0, "Defense System",    _D_DEF,  7); r += 1
 
-    # ── Sweep & Tip Speed panel (full-width row 2) ────────────────────
+    # ── Sweep & Tip Speed panel (full-width row 2, 2-row compact grid) ──
     def _sweep_sec(self, parent):
         f = ttk.LabelFrame(parent,
-                           text="  SWEEP PARAMETERS  &  TIP SPEED CONSTRAINTS  ",
-                           padding=10)
-        f.pack(fill="x", padx=6, pady=4)
+                           text="  SWEEP & TIP SPEED CONSTRAINTS  ",
+                           padding=(8, 4))
+        f.pack(fill="x", padx=6, pady=(0, 2))
 
-        # ---- Left group: velocity & altitude sweep ranges ----
-        lg = ttk.Frame(f)
-        lg.pack(side="left", fill="y", padx=(0, 30))
+        py = 2   # vertical padding kept tight throughout
 
-        ttk.Label(lg, text="-- Velocity Sweeps --",
-                  foreground="#ffa657").grid(
-            row=0, column=0, columnspan=4, sticky="w", pady=(0, 4))
+        # ── Row 0: velocity & altitude sweep ranges ──────────────────────
+        c = 0
+        ttk.Label(f, text="Sweeps:", foreground="#ffa657",
+                  font=("Consolas", 9, "bold")).grid(
+            row=0, column=c, sticky="e", padx=(2, 4), pady=py); c += 1
 
-        ttk.Label(lg, text="ROC sweep [kts]:").grid(
-            row=1, column=0, sticky="e", padx=4, pady=3)
+        # ROC range
+        ttk.Label(f, text="ROC [kts]").grid(
+            row=0, column=c, sticky="e", padx=(6, 2), pady=py); c += 1
         self.v_roc_vmin = tk.StringVar(value=str(_D_ROC_VMIN))
-        ttk.Entry(lg, textvariable=self.v_roc_vmin, width=5).grid(
-            row=1, column=1, sticky="w", padx=2)
-        ttk.Label(lg, text="to").grid(row=1, column=2, padx=4)
+        ttk.Entry(f, textvariable=self.v_roc_vmin, width=4).grid(
+            row=0, column=c, sticky="w", padx=1, pady=py); c += 1
+        ttk.Label(f, text="-").grid(row=0, column=c, padx=1); c += 1
         self.v_roc_vmax = tk.StringVar(value=str(_D_ROC_VMAX))
-        ttk.Entry(lg, textvariable=self.v_roc_vmax, width=5).grid(
-            row=1, column=3, sticky="w", padx=2)
+        ttk.Entry(f, textvariable=self.v_roc_vmax, width=4).grid(
+            row=0, column=c, sticky="w", padx=1, pady=py); c += 1
 
-        ttk.Label(lg, text="Vmax sweep [kts]:").grid(
-            row=2, column=0, sticky="e", padx=4, pady=3)
+        # Vmax range
+        ttk.Label(f, text="Vmax [kts]").grid(
+            row=0, column=c, sticky="e", padx=(10, 2), pady=py); c += 1
         self.v_vmax_vmin = tk.StringVar(value=str(_D_VMAX_VMIN))
-        ttk.Entry(lg, textvariable=self.v_vmax_vmin, width=5).grid(
-            row=2, column=1, sticky="w", padx=2)
-        ttk.Label(lg, text="to").grid(row=2, column=2, padx=4)
+        ttk.Entry(f, textvariable=self.v_vmax_vmin, width=4).grid(
+            row=0, column=c, sticky="w", padx=1, pady=py); c += 1
+        ttk.Label(f, text="-").grid(row=0, column=c, padx=1); c += 1
         self.v_vmax_vmax = tk.StringVar(value=str(_D_VMAX_VMAX))
-        ttk.Entry(lg, textvariable=self.v_vmax_vmax, width=5).grid(
-            row=2, column=3, sticky="w", padx=2)
+        ttk.Entry(f, textvariable=self.v_vmax_vmax, width=4).grid(
+            row=0, column=c, sticky="w", padx=1, pady=py); c += 1
 
-        ttk.Label(lg, text="Alt sweep max [ft]:").grid(
-            row=3, column=0, sticky="e", padx=4, pady=3)
+        # Altitude sweep
+        ttk.Label(f, text="Alt max [ft]").grid(
+            row=0, column=c, sticky="e", padx=(10, 2), pady=py); c += 1
         self.v_alt_max = tk.StringVar(value=str(_D_ALT_MAX))
-        ttk.Entry(lg, textvariable=self.v_alt_max, width=7).grid(
-            row=3, column=1, sticky="w", padx=2)
-        ttk.Label(lg, text="pts:").grid(row=3, column=2, padx=4)
+        ttk.Entry(f, textvariable=self.v_alt_max, width=6).grid(
+            row=0, column=c, sticky="w", padx=1, pady=py); c += 1
+        ttk.Label(f, text="pts").grid(row=0, column=c, padx=(4, 1)); c += 1
         self.v_alt_pts = tk.StringVar(value=str(_D_ALT_PTS))
-        ttk.Entry(lg, textvariable=self.v_alt_pts, width=4).grid(
-            row=3, column=3, sticky="w", padx=2)
+        ttk.Entry(f, textvariable=self.v_alt_pts, width=3).grid(
+            row=0, column=c, sticky="w", padx=1, pady=py); c += 1
 
-        # ---- Right group: tip speed constraint inputs + chart button ----
-        rg = ttk.Frame(f)
-        rg.pack(side="left", fill="y", padx=20)
+        # Fig 10.4 hint (top-right, spanning button column)
+        ttk.Label(f, text="tip speed vs. fwd speed",
+                  foreground="#8b949e",
+                  font=("Consolas", 8)).grid(
+            row=0, column=c, columnspan=2,
+            sticky="w", padx=(16, 4), pady=py)
 
-        ttk.Label(rg, text="-- Rotor Tip Speed Constraints --",
-                  foreground="#ffa657").grid(
-            row=0, column=0, columnspan=2, sticky="w", pady=(0, 4))
+        # ── Row 1: tip speed constraint inputs + chart button ────────────
+        c = 0
+        ttk.Label(f, text="Tip limits:", foreground="#ffa657",
+                  font=("Consolas", 9, "bold")).grid(
+            row=1, column=c, sticky="e", padx=(2, 4), pady=py); c += 1
 
         self.v_tip_noise = tk.StringVar(value=str(_D_TIP_NOISE))
         self.v_tip_ske   = tk.StringVar(value=str(_D_TIP_SKE))
         self.v_tip_M     = tk.StringVar(value=str(_D_TIP_M_COMP))
         self.v_tip_mu    = tk.StringVar(value=str(_D_TIP_MU_MAX))
 
-        for row_i, (lbl, var, tip) in enumerate([
-            ("Noise limit [ft/s]:",      self.v_tip_noise,
-             "Max allowable tip speed for acoustic compliance"),
-            ("SKE limit [ft/s]:",        self.v_tip_ske,
-             "Min tip speed for stored kinetic energy on engine-out"),
-            ("Comp. Mach (chart only):", self.v_tip_M,
-             "Advancing-tip Mach for compressibility onset display"),
-            ("Max adv. ratio \u03bc:",   self.v_tip_mu,
-             "Retreating blade stall advance ratio limit"),
-        ], start=1):
-            ttk.Label(rg, text=lbl).grid(
-                row=row_i, column=0, sticky="e", padx=4, pady=3)
-            ttk.Entry(rg, textvariable=var, width=7).grid(
-                row=row_i, column=1, sticky="w", padx=4, pady=3)
+        for lbl, var in [
+            ("Noise [ft/s]",  self.v_tip_noise),
+            ("SKE [ft/s]",    self.v_tip_ske),
+            ("Comp. Mach",    self.v_tip_M),
+            (u"Max \u03bc",   self.v_tip_mu),
+        ]:
+            ttk.Label(f, text=lbl).grid(
+                row=1, column=c, sticky="e", padx=(6, 2), pady=py); c += 1
+            ttk.Entry(f, textvariable=var, width=5).grid(
+                row=1, column=c, sticky="w", padx=1, pady=py)
+            c += 2   # skip the "-" column used in sweep rows above
 
-        # Chart button + description
-        btn_frame = ttk.Frame(rg)
-        btn_frame.grid(row=5, column=0, columnspan=2, pady=(10, 2), sticky="w")
-        ttk.Button(btn_frame,
-                   text="  View Prouty Fig 10.4  ",
+        # Chart button (aligned under the hint text)
+        ttk.Button(f, text="  View Fig 10.4  ",
                    style="Tip.TButton",
-                   command=self._show_tip_chart).pack(side="left")
-
-        ttk.Label(rg,
-                  text=(u"  \u2190  Shows rotor tip speed vs. forward speed with\n"
-                        u"     all four design constraints and your design\n"
-                        u"     point overlaid on the acceptable region."),
-                  foreground="#8b949e",
-                  font=("Consolas", 9)).grid(
-            row=6, column=0, columnspan=2, sticky="w", pady=(2, 0))
+                   command=self._show_tip_chart).grid(
+            row=1, column=c, columnspan=2,
+            sticky="w", padx=(14, 4), pady=py)
 
     # ── Collect all inputs ────────────────────────────────────────────
     def _inputs(self) -> dict:
